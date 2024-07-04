@@ -29,26 +29,55 @@ namespace ModbusConsoleApp
             _portClient = _uart.GetClient();
             _driver = new ModbusClient(new ModbusRtuCodec()) { Address = SlaveId };
 
-            var StartAddress = 45;
             var DataLength = 1;
             var function = ModbusCommand.FuncReadMultipleRegisters;
 
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_A, DataLength, function);
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_B, DataLength, function);
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_C, DataLength, function);
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_D, DataLength, function);
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_E, DataLength, function);
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_F, DataLength, function);
+
+            _uart.Close();
+
+            while (true) { }
+
+        }
+
+        private static void WriteHoldingRegister(int StartAddress, int DataLength, byte function)
+        {
             var command = new ModbusCommand(function) { Offset = StartAddress, Count = DataLength, TransId = _transactionId++ };
             var result = _driver.ExecuteGeneric(_portClient, command);
             if (result.Status == CommResponse.Ack)
             {
-                Console.WriteLine(String.Format("Read succeeded: Function code:{0}.", function));
                 foreach (var data in command.Data)
                 {
-                    Console.WriteLine($" Received : {data}");
+                    Console.WriteLine($"Read succeeded: Function code: {(int)function} -> {data}");
                 }
             }
             else
             {
                 Console.WriteLine(String.Format("Read ERRRO => Function code:{0}.", result.Status));
             }
-            while (true) { }
+        }
 
+
+        private static void ReadHoldingRegister(int StartAddress, int DataLength, byte function)
+        {
+            var command = new ModbusCommand(function) { Offset = StartAddress, Count = DataLength, TransId = _transactionId++ };
+            var result = _driver.ExecuteGeneric(_portClient, command);
+            if (result.Status == CommResponse.Ack)
+            {
+                foreach (var data in command.Data)
+                {
+                    Console.WriteLine($"Read succeeded: FC: {function} -> {data}");
+                }
+            }
+            else
+            {
+                Console.WriteLine(String.Format("Read ERROR => Function code:{0}.", result.Status));
+            }
         }
     }
 }

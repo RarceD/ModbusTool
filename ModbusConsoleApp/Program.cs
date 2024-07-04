@@ -30,14 +30,26 @@ namespace ModbusConsoleApp
             _driver = new ModbusClient(new ModbusRtuCodec()) { Address = SlaveId };
 
             var DataLength = 1;
-            var function = ModbusCommand.FuncReadMultipleRegisters;
 
-            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_A, DataLength, function);
-            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_B, DataLength, function);
-            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_C, DataLength, function);
-            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_D, DataLength, function);
-            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_E, DataLength, function);
-            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_F, DataLength, function);
+            ushort[] waterPercentage = new ushort[] { 100 };
+
+            WriteHoldingRegister(MemmoryMap.WRITE_WATER_PROGRAM_A, DataLength, waterPercentage);
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_A, DataLength);
+
+            WriteHoldingRegister(MemmoryMap.WRITE_WATER_PROGRAM_B, DataLength, waterPercentage);
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_B, DataLength);
+
+            WriteHoldingRegister(MemmoryMap.WRITE_WATER_PROGRAM_C, DataLength, waterPercentage);
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_C, DataLength);
+
+            WriteHoldingRegister(MemmoryMap.WRITE_WATER_PROGRAM_D, DataLength, waterPercentage);
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_D, DataLength);
+
+            WriteHoldingRegister(MemmoryMap.WRITE_WATER_PROGRAM_E, DataLength, waterPercentage);
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_E, DataLength);
+
+            WriteHoldingRegister(MemmoryMap.WRITE_WATER_PROGRAM_F, DataLength, waterPercentage);
+            ReadHoldingRegister(MemmoryMap.READ_WATER_PROGRAM_F, DataLength);
 
             _uart.Close();
 
@@ -45,15 +57,21 @@ namespace ModbusConsoleApp
 
         }
 
-        private static void WriteHoldingRegister(int StartAddress, int DataLength, byte function)
+        private static void WriteHoldingRegister(int StartAddress, int DataLength, ushort[] data)
         {
-            var command = new ModbusCommand(function) { Offset = StartAddress, Count = DataLength, TransId = _transactionId++ };
+            var command = new ModbusCommand(ModbusCommand.FuncWriteMultipleRegisters)
+            {
+                Offset = StartAddress,
+                Count = DataLength,
+                TransId = _transactionId++,
+                Data = data
+            };
             var result = _driver.ExecuteGeneric(_portClient, command);
             if (result.Status == CommResponse.Ack)
             {
-                foreach (var data in command.Data)
+                foreach (var d in command.Data)
                 {
-                    Console.WriteLine($"Read succeeded: Function code: {(int)function} -> {data}");
+                    Console.WriteLine($"Write succeeded: FC: {ModbusCommand.FuncWriteMultipleRegisters} -> {d}");
                 }
             }
             else
@@ -63,15 +81,15 @@ namespace ModbusConsoleApp
         }
 
 
-        private static void ReadHoldingRegister(int StartAddress, int DataLength, byte function)
+        private static void ReadHoldingRegister(int StartAddress, int DataLength)
         {
-            var command = new ModbusCommand(function) { Offset = StartAddress, Count = DataLength, TransId = _transactionId++ };
+            var command = new ModbusCommand(ModbusCommand.FuncReadMultipleRegisters) { Offset = StartAddress, Count = DataLength, TransId = _transactionId++ };
             var result = _driver.ExecuteGeneric(_portClient, command);
             if (result.Status == CommResponse.Ack)
             {
                 foreach (var data in command.Data)
                 {
-                    Console.WriteLine($"Read succeeded: FC: {function} -> {data}");
+                    Console.WriteLine($"Read succeeded: FC: {ModbusCommand.FuncReadMultipleRegisters} -> {data}");
                 }
             }
             else

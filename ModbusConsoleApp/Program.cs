@@ -31,8 +31,8 @@ namespace ModbusConsoleApp
             _uart.Open();
             _portClient = _uart.GetClient();
             _driver = new ModbusClient(new ModbusRtuCodec()) { Address = SlaveId };
-
-            RunValveProgramIrrigationTest();
+            RunSetGetTimeTest();
+            // RunValveProgramIrrigationTest();
             // RunWaterPercentageTests();
             // RunHourProgramTimeTest();
             _uart.Close();
@@ -79,8 +79,40 @@ namespace ModbusConsoleApp
             }
         }
 
+
+        public static void RunSetGetTimeTest()
+        {
+            ReadHoldingRegister(MemmoryMap.MODBUS_GENERAL_TIME_GET, 1);
+            var DataLength = 2;
+            DateTime now = DateTime.Now;
+            ushort timeInMinutes = (ushort)(now.Hour * 60 + now.Minute);
+            ushort weekday = (ushort)now.DayOfWeek;
+            WriteHoldingRegister(MemmoryMap.MODBUS_GENERAL_TIME_SET, DataLength, new ushort[] { timeInMinutes, weekday });
+        }
         public static void RunValveProgramIrrigationTest()
         {
+
+            var DataLength = 1;
+            ushort[] timeInMinutes = new ushort[] { (ushort)(120 + 10) };
+            for (ushort i = 0; i < 20; i++)
+            {
+                WriteHoldingRegister(MemmoryMap.MODBUS_SET_VALVE_TIME_PROGRAM_A + i, DataLength, timeInMinutes);
+                ReadHoldingRegister(MemmoryMap.MODBUS_VALVE_TIME_PROGRAM_A + i, DataLength);
+                WriteHoldingRegister(MemmoryMap.MODBUS_SET_VALVE_TIME_PROGRAM_B + i, DataLength, timeInMinutes);
+                ReadHoldingRegister(MemmoryMap.MODBUS_VALVE_TIME_PROGRAM_B + i, DataLength);
+                Thread.Sleep(200);
+                WriteHoldingRegister(MemmoryMap.MODBUS_SET_VALVE_TIME_PROGRAM_C + i, DataLength, timeInMinutes);
+                ReadHoldingRegister(MemmoryMap.MODBUS_VALVE_TIME_PROGRAM_C + i, DataLength);
+                WriteHoldingRegister(MemmoryMap.MODBUS_SET_VALVE_TIME_PROGRAM_D + i, DataLength, timeInMinutes);
+                ReadHoldingRegister(MemmoryMap.MODBUS_VALVE_TIME_PROGRAM_D + i, DataLength);
+                WriteHoldingRegister(MemmoryMap.MODBUS_SET_VALVE_TIME_PROGRAM_E + i, DataLength, timeInMinutes);
+                Thread.Sleep(200);
+                ReadHoldingRegister(MemmoryMap.MODBUS_VALVE_TIME_PROGRAM_E + i, DataLength);
+                WriteHoldingRegister(MemmoryMap.MODBUS_SET_VALVE_TIME_PROGRAM_F + i, DataLength, timeInMinutes);
+                ReadHoldingRegister(MemmoryMap.MODBUS_VALVE_TIME_PROGRAM_F + i, DataLength);
+            }
+
+
         }
 
         public static void RunHourProgramTimeTest()

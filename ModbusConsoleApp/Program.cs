@@ -1,7 +1,6 @@
 ﻿using ModbusLib;
 using ModbusLib.Protocols;
 using System;
-using System.Globalization;
 using System.IO.Ports;
 using System.Threading;
 
@@ -11,9 +10,7 @@ namespace ModbusConsoleApp
     {
         static private ModbusClient _driver;
         static private ICommClient _portClient;
-        static private SerialPort _uart;
         static private int _transactionId;
-        static ushort[] _registerData = new ushort[65000];
 
         static void Main(string[] args)
         {
@@ -25,16 +22,23 @@ namespace ModbusConsoleApp
             int Baud = 9600;
             int DataBits = 8;
             StopBits StopBits = StopBits.One;
-            var Parity = System.IO.Ports.Parity.None;
+            Parity Parity = System.IO.Ports.Parity.None;
 
-            _uart = new SerialPort(PortName, Baud, Parity, DataBits, StopBits);
+            var _uart = new SerialPort(PortName, Baud, Parity, DataBits, StopBits);
             _uart.Open();
             _portClient = _uart.GetClient();
             _driver = new ModbusClient(new ModbusRtuCodec()) { Address = SlaveId };
-            RunSetGetTimeTest();
+            var reader = new Reader(_driver, _portClient);
+
+            // Run actual test code:
+            // RunSetGetTimeTest();
             // RunValveProgramIrrigationTest();
-            // RunWaterPercentageTests();
+            // RunWaterPercentageTest();
             // RunHourProgramTimeTest();
+            int time = reader.ReadOneHoldingRegister(MemmoryMap.MODBUS_GENERAL_TIME_GET);
+            var hours = Math.Truncate((double)(time / 60));
+            var min = time - hours * 60;
+
             _uart.Close();
             while (true) { }
         }
@@ -61,7 +65,6 @@ namespace ModbusConsoleApp
                 Console.WriteLine(String.Format("Read ERRRO => Function code:{0}.", result.Status));
             }
         }
-
         private static void ReadHoldingRegister(int StartAddress, int DataLength)
         {
             var command = new ModbusCommand(ModbusCommand.FuncReadMultipleRegisters) { Offset = StartAddress, Count = DataLength, TransId = _transactionId++ };
@@ -78,8 +81,6 @@ namespace ModbusConsoleApp
                 Console.WriteLine(String.Format("Read ERROR => Function code:{0}.", result.Status));
             }
         }
-
-
         public static void RunSetGetTimeTest()
         {
             ReadHoldingRegister(MemmoryMap.MODBUS_GENERAL_TIME_GET, 1);
@@ -114,7 +115,6 @@ namespace ModbusConsoleApp
 
 
         }
-
         public static void RunHourProgramTimeTest()
         {
             var DataLength = 1;
@@ -143,7 +143,6 @@ namespace ModbusConsoleApp
                 ReadHoldingRegister(MemmoryMap.MODBUS_GET_START_PROGRAM_F + i, DataLength);
             }
         }
-
         public static void RunWaterPercentageTest()
         {
             ushort[] waterPercentage = new ushort[] { 123 };
